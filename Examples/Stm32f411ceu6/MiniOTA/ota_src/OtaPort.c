@@ -16,7 +16,7 @@
 #include "OtaXmodem.h"
 #include "OtaUtils.h"
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL)
+#if (OTA_FLASH_FORMAT == 1)
 /*
  * stm32f4xx_flash.h 里的 FLASH_Sector_0～FLASH_Sector_7 是「寄存器编码」：
  *   FLASH_Sector_0=0x0000, Sector_1=0x0008, ..., Sector_7=0x0038

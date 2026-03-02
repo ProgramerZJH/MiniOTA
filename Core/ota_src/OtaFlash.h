@@ -30,13 +30,13 @@ typedef struct __OTA_FLASH_HANDLE
     uint16_t page_offset;        /**< 当前页内的偏移量 */
     uint8_t  page_buf[OTA_FLASH_PAGE_SIZE];  /**< 页缓冲区，大小为 Flash 页大小 */
     /**
-     * 以下字段主要用于“手动模式”下的非均匀扇区处理：
+     * 以下字段主要用于“非均匀Flash模式”下的非均匀扇区处理：
      *  - sector_start/sector_size：当前所在物理扇区的起始地址与大小
      *  - sector_valid：是否已经完成当前扇区的定位
-     * 这些字段在自动模式下不会影响现有逻辑。
+     * 这些字段在均匀Flash下不会影响现有逻辑。
      */
-    uint32_t sector_start;       /**< 当前扇区起始地址（仅手动模式使用） */
-    uint32_t sector_size;        /**< 当前扇区大小（仅手动模式使用） */
+    uint32_t sector_start;       /**< 当前扇区起始地址（仅非均匀Flash模式使用） */
+    uint32_t sector_size;        /**< 当前扇区大小（仅非均匀Flash模式使用） */
     uint8_t  sector_valid;       /**< 当前扇区信息是否有效 */
     uint8_t  reserved[3];        /**< 结构体对齐保留 */
 } OTA_FLASH_HANDLE;

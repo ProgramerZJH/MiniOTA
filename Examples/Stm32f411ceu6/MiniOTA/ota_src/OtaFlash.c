@@ -106,9 +106,9 @@ static uint8_t OTA_FlashLocateSector(uint32_t addr, OTA_FLASH_SECTOR_INFO *info)
     return OTA_FALSE;
 }
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL) && defined(OTA_BUFFER_SECTOR_START)
+#if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
 /**
- * @brief  将指定扇区整扇区拷贝到缓冲扇区（手动模式 + 配置了缓冲扇区时使用）
+ * @brief  将指定扇区整扇区拷贝到缓冲扇区（非均匀Flash模式 + 配置了缓冲扇区时使用）
  * @param  sector_start  源扇区起始地址
  * @param  sector_size   扇区大小（字节）
  * @return 0: 成功, 1: 失败
@@ -229,7 +229,7 @@ void OTA_FlashHandleInit(uint32_t addr)
 
     (void)OTA_FlashGetLayoutInternal();
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL) && defined(OTA_BUFFER_SECTOR_START)
+#if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
     {
         OTA_FLASH_SECTOR_INFO info;
         if (OTA_FlashLocateSector(addr, &info) == OTA_TRUE)
@@ -256,15 +256,15 @@ void OTA_FlashHandleInit(uint32_t addr)
     }
 #endif
 
-    /* 自动模式或未配置缓冲：直接从 Flash 预读当前页 */
+    /* 均匀Flash模式或未配置缓冲：直接从 Flash 预读当前页 */
     OTA_DrvRead(addr, flash.page_buf, OTA_FLASH_PAGE_SIZE);
 }
 
 /**
- * @brief  自动模式下的页写入实现（适用于均匀页 Flash）
+ * @brief  均匀Flash模式下的页写入实现（适用于均匀页 Flash）
  * @return 0: 成功, 1: 失败
  */
-static int OTA_FlashWrite_Auto(void)
+static int OTA_FlashWrite_Uniform(void)
 {
     /* 打开 Flash（解锁） */
     if (OTA_FlashUnlock() != 0)
@@ -321,12 +321,12 @@ static int OTA_FlashWrite_Auto(void)
 }
 
 /**
- * @brief  手动模式下的页写入实现（适用于非均匀扇区）
+ * @brief  非均匀Flash模式下的页写入实现（适用于非均匀扇区）
  *         若定义了 OTA_BUFFER_SECTOR_START：进入新扇区时先整扇区拷贝到缓冲、再擦除原扇区；
  *         按页写回原扇区后，从缓冲预读下一页供 Xmodem 打补丁。
  * @return 0: 成功, 1: 失败
  */
-static int OTA_FlashWrite_Manual(void)
+static int OTA_FlashWrite_Not_Uniform(void)
 {
     OTA_FLASH_SECTOR_INFO info;
 
@@ -343,7 +343,7 @@ static int OTA_FlashWrite_Manual(void)
         flash.sector_size  = info.sector_size;
         flash.sector_valid = 1U;
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL) && defined(OTA_BUFFER_SECTOR_START)
+#if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
         /* 进入新扇区：先拷贝到缓冲再擦除原扇区，避免未覆盖区域丢失 */
         if (OTA_FlashCopySectorToBuffer(info.sector_start, info.sector_size) != 0)
         {
@@ -400,7 +400,7 @@ static int OTA_FlashWrite_Manual(void)
     flash.page_offset = 0U;
     flash.curr_addr  += OTA_FLASH_PAGE_SIZE;
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL) && defined(OTA_BUFFER_SECTOR_START)
+#if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
     /* 仍在同一扇区内则从缓冲预读下一页，供下一轮 Xmodem 打补丁 */
     if (flash.curr_addr < flash.sector_start + flash.sector_size)
     {
@@ -419,12 +419,12 @@ static int OTA_FlashWrite_Manual(void)
  */
 int OTA_FlashWrite(void)
 {
-    /* 根据编译期配置选择自动/手动模式
-     *  - OTA_FLASH_MODE_AUTO  : 适用于均匀页 Flash（如 F1），保持旧行为
-     *  - OTA_FLASH_MODE_MANUAL: 适用于非均匀扇区（如 F411），按扇区粒度擦除 */
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL)
-    return OTA_FlashWrite_Manual();
+    /* 根据编译期配置选择均匀/非均匀Flash
+     *  - OTA_FLASH_FORMAT_UNIFORM: 适用于均匀页 Flash（如 F1），保持旧行为
+     *  - OTA_FLASH_FORMAT_NOT_UNIFORM: 适用于非均匀扇区（如 F411），按扇区粒度擦除 */
+#if (OTA_FLASH_FORMAT == 1)
+    return OTA_FlashWrite_Not_Uniform();
 #else
-    return OTA_FlashWrite_Auto();
+    return OTA_FlashWrite_Uniform();
 #endif
 }

@@ -8,7 +8,7 @@
  *  - （扇区/页）大小 = OTA_FLASH_PAGE_SIZE
  *  - （扇区/页）数量 = OTA_FLASH_SIZE / OTA_FLASH_PAGE_SIZE
  *
- * 因此这里将布局简化为单一均匀分组，便于自动模式直接按页计算。
+ * 因此这里将布局简化为单一均匀分组，便于均匀Flash直接按页计算。
  */
 static const MiniOTA_SectorGroup F103Ser[] = {
     { OTA_FLASH_SIZE / OTA_FLASH_PAGE_SIZE, OTA_FLASH_PAGE_SIZE },
