@@ -32,7 +32,7 @@ typedef struct
 } OTA_FLASH_SECTOR_INFO;
 
 /**
- * @brief  懒加载获取布局指针
+ * @brief  获取布局指针
  */
 static const MiniOTA_FlashLayout* OTA_FlashGetLayoutInternal(void)
 {
@@ -80,9 +80,9 @@ static uint8_t OTA_FlashLocateSector(uint32_t addr, OTA_FLASH_SECTOR_INFO *info)
     }
 
     uint32_t curr = start;
-    for (uint32_t gi = 0U; gi < layout->group_count; ++gi)
+    for (uint32_t i = 0U; i < layout->group_count; i++)
     {
-        const MiniOTA_SectorGroup *g = &layout->groups[gi];
+        const MiniOTA_SectorGroup *g = &layout->groups[i];
         uint32_t group_size = g->count * g->size;
 
         if (addr < (curr + group_size))
@@ -123,7 +123,7 @@ static int OTA_FlashCopySectorToBuffer(uint32_t sector_start, uint32_t sector_si
         return 1;
     }
 
-    /* 擦除缓冲扇区，以便写入拷贝数据 */
+    // 1. 擦除缓冲扇区，以便写入拷贝数据
     if (OTA_ErasePage(buf_start) != 0)
     {
         OTA_FlashLock();
@@ -131,11 +131,14 @@ static int OTA_FlashCopySectorToBuffer(uint32_t sector_start, uint32_t sector_si
         return 1;
     }
 
+    // 2. 按页拷贝 (每页 1KB)
     for (off = 0U; off < sector_size; off += OTA_FLASH_PAGE_SIZE)
     {
+        // 2.1. 从原扇区读取 1KB
         OTA_DrvRead(sector_start + off, flash.page_buf, OTA_FLASH_PAGE_SIZE);
         for (uint32_t i = 0U; i < OTA_FLASH_PAGE_SIZE; i += 2U)
         {
+            // 2.2. 写入缓冲扇区
             uint16_t hw = (uint16_t)(flash.page_buf[i] | (flash.page_buf[i + 1U] << 8));
             if (OTA_DrvProgramHalfword(buf_start + off + i, hw) != 0)
             {
@@ -221,47 +224,50 @@ void OTA_FlashSetMirr(const uint8_t *mirr, uint16_t length)
  */
 void OTA_FlashHandleInit(uint32_t addr)
 {
+    // 1. 初始化句柄
     flash.curr_addr    = addr;
     flash.page_offset  = 0;
     flash.sector_start = 0;
     flash.sector_size  = 0;
     flash.sector_valid = 0;
 
-    (void)OTA_FlashGetLayoutInternal();
+    //(void)OTA_FlashGetLayoutInternal();
 
 #if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
     {
         OTA_FLASH_SECTOR_INFO info;
+        // 2. 定位当前扇区
         if (OTA_FlashLocateSector(addr, &info) == OTA_TRUE)
         {
             flash.sector_start = info.sector_start;
             flash.sector_size  = info.sector_size;
             flash.sector_valid = 1U;
+            // 3. 拷贝整个扇区到缓冲区
             if (OTA_FlashCopySectorToBuffer(info.sector_start, info.sector_size) != 0)
             {
                 OTA_DebugSend("[OTA][Error]: Copy sector to buffer failed at init.\r\n");
             }
+            // 4. 擦除原扇区
             else if (OTA_FlashUnlock() == 0)
             {
                 (void)OTA_ErasePage(info.sector_start);
                 OTA_FlashLock();
             }
-            /* 从缓冲扇区预读当前页，供 Xmodem 打补丁 */
+            // 5. 从缓冲区预读当前页，供 Xmodem 打补丁 
             {
                 uint32_t page_off = ((addr - info.sector_start) / OTA_FLASH_PAGE_SIZE) * OTA_FLASH_PAGE_SIZE;
                 OTA_FlashLoadPageFromBuffer(page_off);
             }
-            return;
         }
     }
-#endif
-
-    /* 均匀Flash或未配置缓冲：直接从 Flash 预读当前页 */
+#else
+    /* 均匀Flash模式或未配置缓冲：直接从 Flash 预读当前页 */
     OTA_DrvRead(addr, flash.page_buf, OTA_FLASH_PAGE_SIZE);
+#endif
 }
 
 /**
- * @brief  均匀Flash下的页写入实现（适用于均匀页 Flash）
+ * @brief  均匀Flash模式下的页写入实现（适用于均匀页 Flash）
  * @return 0: 成功, 1: 失败
  */
 static int OTA_FlashWrite_Uniform(void)
@@ -330,11 +336,13 @@ static int OTA_FlashWrite_Not_Uniform(void)
 {
     OTA_FLASH_SECTOR_INFO info;
 
+    // 1. 定位当前地址所在扇区
     if (OTA_FlashLocateSector(flash.curr_addr, &info) == OTA_FALSE)
     {
         return 1;
     }
 
+    // 2. 判断是否进入新扇区
     if ((flash.sector_valid == 0U) ||
         (flash.sector_start != info.sector_start) ||
         (flash.sector_size  != info.sector_size))
@@ -344,7 +352,7 @@ static int OTA_FlashWrite_Not_Uniform(void)
         flash.sector_valid = 1U;
 
 #if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
-        /* 进入新扇区：先拷贝到缓冲再擦除原扇区，避免未覆盖区域丢失 */
+        // 3. 进入新扇区：先拷贝到缓冲再擦除原扇区，避免未覆盖区域丢失
         if (OTA_FlashCopySectorToBuffer(info.sector_start, info.sector_size) != 0)
         {
             OTA_DebugSend("[OTA][Error]: Copy sector to buffer failed.\r\n");
@@ -352,6 +360,7 @@ static int OTA_FlashWrite_Not_Uniform(void)
         }
 #endif
 
+        // 4. 解锁flash并擦除新扇区
         if (OTA_FlashUnlock() != 0)
         {
             OTA_DebugSend("[OTA][Error]:Flash UnLock Failed\r\n");
@@ -365,6 +374,7 @@ static int OTA_FlashWrite_Not_Uniform(void)
             return 1;
         }
     }
+    /*
     else
     {
         if (OTA_FlashUnlock() != 0)
@@ -373,7 +383,9 @@ static int OTA_FlashWrite_Not_Uniform(void)
             return 1;
         }
     }
+    */
 
+    // 5. 写入当前页 (1KB)
     for (int i = 0; i < OTA_FLASH_PAGE_SIZE; i += 2)
     {
         uint16_t hw = (uint16_t)(flash.page_buf[i] | (flash.page_buf[i + 1] << 8));
@@ -384,6 +396,7 @@ static int OTA_FlashWrite_Not_Uniform(void)
         }
     }
 
+    // 6. 校验写入数据
     for (int i = 0; i < OTA_FLASH_PAGE_SIZE; i++)
     {
         uint8_t flash_byte = *(volatile uint8_t *)(flash.curr_addr + (uint32_t)i);
@@ -397,11 +410,12 @@ static int OTA_FlashWrite_Not_Uniform(void)
 
     OTA_FlashLock();
 
+    // 7. 移动到下一页
     flash.page_offset = 0U;
     flash.curr_addr  += OTA_FLASH_PAGE_SIZE;
 
 #if (OTA_FLASH_FORMAT == 1) && defined(OTA_BUFFER_SECTOR_START)
-    /* 仍在同一扇区内则从缓冲预读下一页，供下一轮 Xmodem 打补丁 */
+    // 8. 预读下一页 (如果还在同一扇区)，供下一轮 Xmodem 打补丁
     if (flash.curr_addr < flash.sector_start + flash.sector_size)
     {
         uint32_t next_page_off = (flash.curr_addr - flash.sector_start);

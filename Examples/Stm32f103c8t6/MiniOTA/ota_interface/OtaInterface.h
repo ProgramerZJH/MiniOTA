@@ -82,7 +82,7 @@
 #define OTA_TOTAL_START_ADDRESS   0x08003000UL
 
 /* 引入 F103 Flash 布局模板 */
-#include "stm32f103.h"
+#include "stm32f103_md.h"
 
 /* MiniOTA 管理区域的最大大小(字节) */
 #define OTA_APP_MAX_SIZE          (OTA_FLASH_SIZE - (OTA_TOTAL_START_ADDRESS - OTA_FLASH_START_ADDRESS))

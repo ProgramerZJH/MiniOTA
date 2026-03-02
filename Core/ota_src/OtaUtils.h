@@ -49,8 +49,10 @@
 #define OTA_APP_REGION_SIZE       (OTA_FLASH_SIZE - (OTA_APP_REGION_ADDR - OTA_FLASH_START_ADDRESS))
 #endif
 
-/* 单个 APP 分区的大小 (对齐到页) */
+/* 单个 APP 分区的大小 (对齐到页) 。F4 为APP_A的大小，可在 OtaInterface.h 中重定义。暂定16+16+64+128=224kB*/
+#ifndef OTA_APP_SLOT_SIZE
 #define OTA_APP_SLOT_SIZE         ((OTA_APP_REGION_SIZE / 2) / OTA_FLASH_PAGE_SIZE * OTA_FLASH_PAGE_SIZE)
+#endif
 
 /* APP_A 分区起始地址 */
 #define OTA_APP_A_ADDR            OTA_APP_REGION_ADDR

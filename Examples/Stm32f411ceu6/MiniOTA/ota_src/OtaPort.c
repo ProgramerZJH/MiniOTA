@@ -48,12 +48,14 @@
  */
 static uint8_t OTA_F411_AddrToSector(uint32_t addr)
 {
+    // 1. 检查地址合法性
     if (addr < OTA_F411_FLASH_BASE)
     {
         return 0xFF;
     }
-    addr -= OTA_F411_FLASH_BASE;
+    addr -= OTA_F411_FLASH_BASE;    // 转为相对偏移
 
+    // 2. 判断在哪个区域
     if (addr < 4U * OTA_F411_SECTOR_SIZE_16K)  /* 0 ~ 64KB */
     {
         return (uint8_t)(addr / OTA_F411_SECTOR_SIZE_16K);

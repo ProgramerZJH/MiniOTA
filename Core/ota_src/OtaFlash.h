@@ -35,10 +35,12 @@ typedef struct __OTA_FLASH_HANDLE
      *  - sector_valid：是否已经完成当前扇区的定位
      * 这些字段在均匀Flash下不会影响现有逻辑。
      */
+#if (OTA_FLASH_FORMAT == 1)
     uint32_t sector_start;       /**< 当前扇区起始地址（仅非均匀Flash模式使用） */
     uint32_t sector_size;        /**< 当前扇区大小（仅非均匀Flash模式使用） */
     uint8_t  sector_valid;       /**< 当前扇区信息是否有效 */
     uint8_t  reserved[3];        /**< 结构体对齐保留 */
+#endif
 } OTA_FLASH_HANDLE;
 /**
  * @}
