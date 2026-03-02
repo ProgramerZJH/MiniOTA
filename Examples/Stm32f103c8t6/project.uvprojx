@@ -620,14 +620,14 @@
               <FilePath>.\MiniOTA\ota_src\OtaXmodem.c</FilePath>
             </File>
             <File>
-              <FileName>stm32f103.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\MiniOTA\ota_interface\stm32f103.h</FilePath>
-            </File>
-            <File>
               <FileName>OtaFlashIfoDef.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\MiniOTA\ota_src\OtaFlashIfoDef.h</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f103_md.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\MiniOTA\ota_interface\stm32f103_md.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -640,5 +640,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>project</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

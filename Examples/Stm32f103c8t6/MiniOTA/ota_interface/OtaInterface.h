@@ -56,20 +56,25 @@
 /* Flash 页大小 (Cortex-M3 常用 1024 或 2048) */
 #define OTA_FLASH_PAGE_SIZE       1024
 
-/* F1 设备使用均匀页 Flash，直接采用自动模式 */
-#define OTA_FLASH_MODE            OTA_FLASH_MODE_AUTO
-//#define OTA_FLASH_MODE            OTA_FLASH_MODE_MANUAL
+/* F1 设备使用均匀页 Flash */
+#define OTA_FLASH_FORMAT            0 /* OTA_FLASH_FORMAT_UNIFORM */
+//#define OTA_FLASH_FORMAT            1 /* OTA_FLASH_FORMAT_NOT_UNIFORM */
 
 /* (模板示例, 请参考f411例程) F411：Meta 独占 Sector1(16K)，APP 从 Sector2 开始；缓冲扇区为 Sector7(128K) */
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL)
+#if (OTA_FLASH_FORMAT == 1)
 #define OTA_META_SIZE             (16U * 1024U)
 #define OTA_APP_REGION_SIZE       (352U * 1024U)
 #endif
 
 /* (模板示例, 请参考f411例程) F411：最后一个 128K 扇区作为缓冲区（Sector7: 0x08060000） */
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL)
+#if (OTA_FLASH_FORMAT == 1)
 #define OTA_BUFFER_SECTOR_START   0x08060000UL  //(16*4+64+128*2)*1024=60000(HEX)
 #define OTA_BUFFER_SECTOR_SIZE   (128U * 1024U)
+#endif
+
+/* (模板示例, 请参考f411例程) F411：暂定APP_A大小为224kB */
+#if (OTA_FLASH_FORMAT == 1)
+#define OTA_APP_SLOT_SIZE         (224U * 1024U)
 #endif
 
 /* 分配给 MiniOTA (Meta + APP_A + APP_B) 的起始地址 
@@ -77,7 +82,7 @@
 #define OTA_TOTAL_START_ADDRESS   0x08003000UL
 
 /* 引入 F103 Flash 布局模板 */
-#include "stm32f103.h"
+#include "stm32f103_md.h"
 
 /* MiniOTA 管理区域的最大大小(字节) */
 #define OTA_APP_MAX_SIZE          (OTA_FLASH_SIZE - (OTA_TOTAL_START_ADDRESS - OTA_FLASH_START_ADDRESS))

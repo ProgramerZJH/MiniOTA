@@ -16,7 +16,7 @@
 #include "OtaXmodem.h"
 #include "OtaUtils.h"
 
-#if (OTA_FLASH_MODE == OTA_FLASH_MODE_MANUAL)
+#if (OTA_FLASH_FORMAT == 1)
 /*
  * stm32f4xx_flash.h 里的 FLASH_Sector_0～FLASH_Sector_7 是「寄存器编码」：
  *   FLASH_Sector_0=0x0000, Sector_1=0x0008, ..., Sector_7=0x0038
@@ -48,12 +48,14 @@
  */
 static uint8_t OTA_F411_AddrToSector(uint32_t addr)
 {
+    // 1. 检查地址合法性
     if (addr < OTA_F411_FLASH_BASE)
     {
         return 0xFF;
     }
-    addr -= OTA_F411_FLASH_BASE;
+    addr -= OTA_F411_FLASH_BASE;    // 转为相对偏移
 
+    // 2. 判断在哪个区域
     if (addr < 4U * OTA_F411_SECTOR_SIZE_16K)  /* 0 ~ 64KB */
     {
         return (uint8_t)(addr / OTA_F411_SECTOR_SIZE_16K);

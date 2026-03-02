@@ -30,39 +30,29 @@
 #define OTA_NULL             ((void *)0)
 #endif
 
-/* Flash 写入模式：自动 / 手动
- *  - 自动模式（AUTO）：适用于页大小固定、擦除粒度与页一致或可视为一致的 Flash（如 STM32F1）
- *  - 手动模式（MANUAL）：适用于非均匀扇区，需要依赖 MiniOTA_FlashLayout 进行地址映射（如 STM32F411）
- */
-#define OTA_FLASH_MODE_AUTO      0U
-#define OTA_FLASH_MODE_MANUAL    1U
-
-#ifndef OTA_FLASH_MODE
-/* 默认使用自动模式；具体工程可在其 OtaInterface.h 中重定义为 MANUAL */
-#define OTA_FLASH_MODE           OTA_FLASH_MODE_AUTO
-#endif
-
 /** @defgroup OTA_Internal_Memory_Map
  * @{
  */
-/* 状态区(Meta)大小: 默认占用一页；F4 等按扇区擦除的芯片可在 OtaInterface.h 中重定义为整扇区 */
+/* 状态区(Meta)大小: 默认占用一页；F4 等按扇区擦除的芯片可在 OtaInterface.h 中重定义为整扇区。F4 为16kB！！！ */
 #ifndef OTA_META_SIZE
 #define OTA_META_SIZE             OTA_FLASH_PAGE_SIZE
 #endif
 
 /* 状态区(Meta)起始地址 */
-#define OTA_META_ADDR             OTA_TOTAL_START_ADDRESS
+#define OTA_META_ADDR             OTA_TOTAL_START_ADDRESS   //0x08004000
 
 /* APP 分区(A+B)的起始地址 */
-#define OTA_APP_REGION_ADDR       (OTA_META_ADDR + OTA_META_SIZE)
+#define OTA_APP_REGION_ADDR       (OTA_META_ADDR + OTA_META_SIZE)   //0x08008000
 
-/* APP 分区(A+B)的总可用空间；F4 等若将缓冲扇区划出，可在 OtaInterface.h 中先于本头文件重定义 */
+/* APP 分区(A+B)的总可用空间；F4 等若将缓冲扇区划出，可在 OtaInterface.h 中先于本头文件重定义。F4 为352kB（16、16、64、128、128）！！！ */
 #ifndef OTA_APP_REGION_SIZE
 #define OTA_APP_REGION_SIZE       (OTA_FLASH_SIZE - (OTA_APP_REGION_ADDR - OTA_FLASH_START_ADDRESS))
 #endif
 
-/* 单个 APP 分区的大小 (对齐到页) */
+/* 单个 APP 分区的大小 (对齐到页) 。F4 为APP_A的大小，可在 OtaInterface.h 中重定义。暂定16+16+64+128=224kB*/
+#ifndef OTA_APP_SLOT_SIZE
 #define OTA_APP_SLOT_SIZE         ((OTA_APP_REGION_SIZE / 2) / OTA_FLASH_PAGE_SIZE * OTA_FLASH_PAGE_SIZE)
+#endif
 
 /* APP_A 分区起始地址 */
 #define OTA_APP_A_ADDR            OTA_APP_REGION_ADDR
